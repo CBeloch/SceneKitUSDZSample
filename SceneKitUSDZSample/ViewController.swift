@@ -22,17 +22,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
-        
-        // Create a new scene
-//        let scene = SCNScene(named: "art.scnassets/ship.scn")!
-  
-        // Create a scene with a udsz file
-        guard let url = Bundle.main.url(forResource: "Televisor_00", withExtension: "usdz") else { fatalError() }
-        let mdlAsset = MDLAsset(url: url)
-        let scene =  SCNScene(mdlAsset: mdlAsset)
-        
-        // Set the scene to the view
-        sceneView.scene = scene
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -40,6 +29,14 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
+        configuration.detectionImages = [
+            .init(
+                UIImage(named: "robot")!.cgImage!,
+                orientation: .up,
+                physicalWidth: 0.1 // in meter - SCALE HERE (1 of 2)
+            )
+        ]
+        // ARReferenceImage.referenceImages(inGroupNamed: "AR Resources", bundle: nil)!
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -54,14 +51,29 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 
     // MARK: - ARSCNViewDelegate
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        // Ensure ImageAnchor
+        guard let imageAnchor = anchor as? ARImageAnchor else {
+            return
+        }
+        
+        // Get the detected reference image
+//        let referenceImage = imageAnchor.referenceImage
+//        referenceImage.name // "robot"
+        
+        guard
+            let modelURL = Bundle.main.url(forResource: "Televisor_00", withExtension: "usdz"),
+            let modelNode = SCNReferenceNode(url: modelURL)
+        else { return }
+        
+        modelNode.load()
+        
+        modelNode.scale = .init(0.002) // SCALE HERE (2 of 2)
+        
+        node.addChildNode(modelNode)
+        
+        self.sceneView.prepare([modelNode]) { success in }
     }
-*/
     
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
